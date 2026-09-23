@@ -10,12 +10,6 @@ MODELS_DIR = PROJECT_ROOT / "models"
 CRITICALITY_RESULTS_DIR = RESULTS_DIR / "criticidade_v2"
 CRITICALITY_MODELS_DIR = MODELS_DIR / "criticidade_v2"
 
-DENGUE_SOURCE = Path(
-    r"C:\Users\VINICIUS\Documents\Codex\2026-09-12\em\outputs\dengue_recife_2013_2021_consolidado.csv"
-)
-CLIMATE_SOURCE = Path(r"C:\Users\VINICIUS\Downloads\inmet_semanal_recife_rows.csv")
-POPULATION_SOURCE = Path(r"C:\Users\VINICIUS\Downloads\ibge_populacao_bairro_rows.csv")
-
 # Altere para 1, 2, 3 ou 4. Tambem pode ser sobrescrito por --horizon na linha de comando.
 FORECAST_HORIZON_WEEKS = 1
 LOOKBACK_WEEKS = 4

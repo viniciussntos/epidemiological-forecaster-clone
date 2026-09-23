@@ -1,58 +1,48 @@
+import inspect
 import unittest
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
 
-from src.config import DATA_DIR
-from src.data_pipeline import TABULAR_NUMERIC_FEATURES
+from src.config import DATA_DIR, PROJECT_ROOT
+from src.data_pipeline import PipelinePaths, _build_weekly_panel
 
 
-class ProcessedDataTests(unittest.TestCase):
-    @classmethod
-    def setUpClass(cls):
-        cls.population = pd.read_csv(DATA_DIR / "populacao_censo_2022_processada.csv")
-        cls.climate = pd.read_csv(DATA_DIR / "clima_2015_2021_processado.csv")
-        cls.dengue = pd.read_csv(DATA_DIR / "dengue_2015_2021_processada.csv")
-        cls.panel = pd.read_csv(DATA_DIR / "painel_semanal_2015_2021_h1.csv")
+class DataPipelineTests(unittest.TestCase):
+    def test_raw_sources_are_explicit(self):
+        signature = inspect.signature(PipelinePaths)
+        for name in ["dengue", "climate", "population"]:
+            self.assertIs(signature.parameters[name].default, inspect.Parameter.empty)
+        with self.assertRaises(TypeError):
+            PipelinePaths()
 
-    def test_population_is_unique_2022(self):
-        self.assertEqual(len(self.population), 94)
-        self.assertEqual(self.population["ano_censo"].unique().tolist(), [2022])
-        self.assertFalse(self.population["bairro_norm"].duplicated().any())
-
-    def test_climate_is_complete_and_training_only_medians_are_recorded(self):
-        self.assertEqual(len(self.climate), 365)
-        self.assertFalse(self.climate[["precipitacao_total", "temp_max_media"]].isna().any().any())
-        self.assertEqual(int(self.climate["precipitacao_imputada"].sum()), 11)
-        self.assertEqual(int(self.climate["temperatura_imputada"].sum()), 11)
-        training = self.climate.loc[self.climate["epi_year"].between(2015, 2020)]
-        precipitation_median = training.groupby("epi_week")["precipitacao_original"].median()
-        temperature_median = training.groupby("epi_week")["temperatura_original"].median()
-        imputed = self.climate.loc[self.climate["precipitacao_imputada"]]
-        np.testing.assert_allclose(
-            imputed["precipitacao_total"], imputed["epi_week"].map(precipitation_median)
+    def test_weekly_panel_fills_absent_cases_with_zero(self):
+        population = pd.DataFrame({"bairro_norm": ["A", "B"], "populacao": [10_000, 20_000]})
+        climate = pd.DataFrame(
+            {
+                "epi_year": [2021, 2021, 2021],
+                "epi_week": [1, 2, 3],
+                "time_index": [0, 1, 2],
+                "precipitacao_total": [10.0, 20.0, 30.0],
+                "temp_max_media": [30.0, 31.0, 32.0],
+                "week_sin": np.sin(2 * np.pi * np.array([1, 2, 3]) / 53.0),
+                "week_cos": np.cos(2 * np.pi * np.array([1, 2, 3]) / 53.0),
+            }
         )
-        np.testing.assert_allclose(
-            imputed["temp_max_media"], imputed["epi_week"].map(temperature_median)
-        )
+        for lag in range(1, 5):
+            climate[f"chuva_lag{lag}"] = climate["precipitacao_total"].shift(lag)
+            climate[f"temp_max_lag{lag}"] = climate["temp_max_media"].shift(lag)
+        dengue = pd.DataFrame({"bairro_norm": ["A"], "epi_year": [2021], "epi_week": [1]})
+        panel = _build_weekly_panel(dengue, climate, population, horizon=1)
+        self.assertEqual(len(panel), 6)
+        self.assertEqual(int(panel["casos_totais"].sum()), 1)
+        self.assertTrue(panel.loc[panel["bairro_norm"].eq("B"), "casos_totais"].eq(0).all())
 
-    def test_dengue_filters_and_deduplication(self):
-        self.assertFalse(self.dengue["tp_classificacao_final"].eq(5).any())
-        keys = [
-            "co_unidade_notificacao",
-            "nu_notificacao",
-            "dt_diagnostico_sintoma",
-            "ds_semana_sintoma",
-            "bairro_norm",
-            "tp_classificacao_final",
-        ]
-        self.assertFalse(self.dengue.duplicated(keys).any())
-
-    def test_panel_has_no_model_feature_leakage_or_missing_test(self):
-        modelable = self.panel.dropna(subset=TABULAR_NUMERIC_FEATURES + ["casos_alvo"])
-        self.assertFalse(modelable[TABULAR_NUMERIC_FEATURES].isna().any().any())
-        self.assertEqual(len(modelable.loc[modelable["target_epi_year"].eq(2021)]), 4888)
-        self.assertTrue((modelable["target_time_index"] > modelable["time_index"]).all())
+    def test_output_directory_is_scoped_to_project_by_default(self):
+        paths = PipelinePaths(Path("dengue.csv"), Path("climate.csv"), Path("population.csv"))
+        self.assertEqual(paths.output_dir, DATA_DIR)
+        self.assertTrue(paths.output_dir.is_relative_to(PROJECT_ROOT))
 
 
 if __name__ == "__main__":

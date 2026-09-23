@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import copy
+import random
 
 import numpy as np
 import torch
@@ -13,6 +14,13 @@ from torch import nn
 
 from src.config import RANDOM_SEED
 from src.criticality_pipeline import CRITICALITY_NUMERIC_FEATURES
+
+
+def set_seed(seed: int) -> None:
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    torch.use_deterministic_algorithms(True, warn_only=True)
 
 
 def make_criticality_preprocessor() -> ColumnTransformer:

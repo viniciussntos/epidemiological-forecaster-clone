@@ -3,8 +3,8 @@ name: Inferência diária de criticidade
 on:
   workflow_dispatch:
   schedule:
-    - cron: "15 8 * * *"
-      timezone: "America/Recife"
+    # 11:15 UTC corresponde a 08:15 em Recife (UTC-3).
+    - cron: "15 11 * * *"
 
 concurrency:
   group: dengue-daily-inference

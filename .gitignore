@@ -18,12 +18,11 @@ models/criticidade_v2/*
 !models/criticidade_v2/production/
 !models/criticidade_v2/production/**
 
-# Somente os resultados mínimos usados pelo fallback local, bootstrap e
-# reprodução do treinamento de produção entram no repositório.
+# Somente os resultados necessários para documentar e reproduzir o treinamento
+# de produção entram no repositório.
 results/**
 !results/criticidade_v2/
 results/criticidade_v2/**
-!results/criticidade_v2/previsoes_xgboost_dashboard.csv
 !results/criticidade_v2/comparacao_todos_horizontes.csv
 !results/criticidade_v2/melhores_hiperparametros_xgboost_h1.json
 !results/criticidade_v2/melhores_hiperparametros_xgboost_h2.json

@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 
 from src.data_pipeline import _epi_week_from_date, normalize_text
-from src.evaluation import risk_category
+from src.criticality_pipeline import category_from_incidence
 
 
 class PipelineUnitTests(unittest.TestCase):
@@ -17,7 +17,7 @@ class PipelineUnitTests(unittest.TestCase):
         self.assertEqual(_epi_week_from_date(pd.Timestamp("2021-01-10")), (2021, 2))
 
     def test_risk_thresholds(self):
-        result = risk_category(np.array([0, 99.99, 100, 299.99, 300, 499.99, 500]))
+        result = category_from_incidence(np.array([0, 99.99, 100, 299.99, 300, 499.99, 500]))
         self.assertEqual(
             result.tolist(),
             ["Baixo", "Baixo", "Medio", "Medio", "Alto", "Alto", "Critico"],

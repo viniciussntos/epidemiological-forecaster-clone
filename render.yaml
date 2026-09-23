@@ -3,15 +3,13 @@ services:
     name: epidemiological-forecaster-api
     runtime: python
     plan: free
-    branch: review/application
+    branch: main
     buildCommand: pip install -r requirements-api.txt
     startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
     healthCheckPath: /health
     envVars:
       - key: PYTHON_VERSION
         value: 3.12.10
-      - key: DATA_SOURCE
-        value: database
       - key: EVALUATION_LAG_WEEKS
         value: "4"
       - key: API_CACHE_TTL_SECONDS

@@ -15,13 +15,13 @@ from src.config import (
 from src.criticality_evaluation import evaluate_criticality, save_criticality_evaluation
 from src.criticality_modeling import (
     CriticalityANN, FocalLoss, class_weights, fit_classifier_epochs,
-    make_criticality_preprocessor, seeded_generator, train_classifier_early_stopping,
+    make_criticality_preprocessor, seeded_generator, set_seed, train_classifier_early_stopping,
 )
-from src.criticality_pipeline import CRITICALITY_NUMERIC_FEATURES, load_criticality_panel
-from src.modeling import set_seed
+from src.criticality_pipeline import CRITICALITY_NUMERIC_FEATURES
 from src.temporal_validation import (
     fold_metric_row, pooled_validation_metrics, progressive_masks, robust_epoch_choice,
 )
+from src.training_data import load_criticality_training_panel
 
 
 FEATURES = CRITICALITY_NUMERIC_FEATURES + ["bairro_norm"]
@@ -42,7 +42,7 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--horizon", type=int, default=FORECAST_HORIZON_WEEKS, choices=range(1, 5))
     args = parser.parse_args()
-    panel = load_criticality_panel(args.horizon)
+    panel = load_criticality_training_panel(args.horizon)
     train_full = panel.loc[panel["target_epi_year"].le(TRAIN_END_YEAR)].copy()
     test = panel.loc[panel["target_epi_year"].eq(TEST_YEAR)].copy()
 

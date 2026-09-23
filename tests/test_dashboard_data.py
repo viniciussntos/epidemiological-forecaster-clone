@@ -1,52 +1,56 @@
+import os
 import unittest
+from unittest.mock import patch
 
 import numpy as np
+import pandas as pd
 
-from src.dashboard_data import (
-    DashboardRepository,
-    RISK_LABELS_DISPLAY,
-    build_dashboard_export,
-    common_origins,
-)
+from src.dashboard_data import DashboardRepository, RISK_LABELS_DISPLAY, common_origins
+
+
+def predictions() -> pd.DataFrame:
+    rows = []
+    for horizon in range(1, 5):
+        for neighborhood, probabilities in [
+            ("A", [0.7, 0.2, 0.08, 0.02]),
+            ("B", [0.1, 0.2, 0.3, 0.4]),
+        ]:
+            rows.append(
+                {
+                    "modo_resultado": "producao",
+                    "epi_year_origem": 2021,
+                    "epi_week_origem": 48,
+                    "horizonte_semanas": horizon,
+                    "bairro_norm": neighborhood,
+                    "prob_baixo": probabilities[0],
+                    "prob_medio": probabilities[1],
+                    "prob_alto": probabilities[2],
+                    "prob_critico": probabilities[3],
+                    "categoria_prevista": RISK_LABELS_DISPLAY[int(np.argmax(probabilities))],
+                    "confianca_modelo": max(probabilities),
+                }
+            )
+    return pd.DataFrame(rows)
 
 
 class DashboardDataTests(unittest.TestCase):
-    @classmethod
-    def setUpClass(cls):
-        build_dashboard_export()
-        cls.predictions = DashboardRepository(database_url=None).predictions()
-
-    def test_enriched_contract_is_complete(self):
-        required = {
-            "semana_origem",
-            "semana_alvo",
-            "horizonte_semanas",
-            "categoria_prevista",
-            "confianca_modelo",
-            "categoria_recente_observada",
-            "previsao_correta",
-        }
-        self.assertTrue(required.issubset(self.predictions.columns))
-        self.assertEqual(set(self.predictions["horizonte_semanas"].unique()), {1, 2, 3, 4})
+    def test_database_url_is_mandatory(self):
+        with patch.dict(os.environ, {}, clear=True):
+            with self.assertRaisesRegex(RuntimeError, "não utiliza arquivos CSV"):
+                DashboardRepository()
 
     def test_probabilities_and_confidence_are_consistent(self):
-        probabilities = self.predictions[["prob_baixo", "prob_medio", "prob_alto", "prob_critico"]].to_numpy()
-        self.assertTrue(np.allclose(probabilities.sum(axis=1), 1.0, atol=1e-6))
-        self.assertTrue(np.allclose(probabilities.max(axis=1), self.predictions["confianca_modelo"]))
-        labels = np.asarray(RISK_LABELS_DISPLAY)[probabilities.argmax(axis=1)]
-        self.assertTrue((labels == self.predictions["categoria_prevista"].to_numpy()).all())
+        frame = predictions()
+        probabilities = frame[["prob_baixo", "prob_medio", "prob_alto", "prob_critico"]].to_numpy()
+        self.assertTrue(np.allclose(probabilities.sum(axis=1), 1.0))
+        self.assertTrue(np.allclose(probabilities.max(axis=1), frame["confianca_modelo"]))
 
     def test_common_origins_have_all_four_horizons(self):
-        validation = self.predictions.loc[
-            self.predictions["modo_resultado"].eq("validacao_historica_2021")
-        ]
-        origins = common_origins(validation)
-        self.assertEqual(origins[0], (2020, 53))
-        self.assertEqual(origins[-1], (2021, 48))
-        self.assertEqual(len(origins), 49)
+        self.assertEqual(common_origins(predictions()), [(2021, 48)])
 
     def test_one_row_per_origin_horizon_and_neighborhood(self):
-        duplicated = self.predictions.duplicated(
+        frame = predictions()
+        duplicated = frame.duplicated(
             ["modo_resultado", "epi_year_origem", "epi_week_origem", "horizonte_semanas", "bairro_norm"]
         )
         self.assertFalse(duplicated.any())

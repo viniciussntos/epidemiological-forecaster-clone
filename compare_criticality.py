@@ -7,7 +7,8 @@ import pandas as pd
 
 from src.config import CRITICALITY_RESULTS_DIR, FORECAST_HORIZON_WEEKS, RISK_TO_ID, TEST_YEAR
 from src.criticality_evaluation import evaluate_reference, save_criticality_evaluation
-from src.criticality_pipeline import category_from_incidence, load_criticality_panel
+from src.criticality_pipeline import category_from_incidence
+from src.training_data import load_criticality_training_panel
 
 
 MODELS = [("xgboost", "XGBoost"), ("rna", "RNA"), ("lstm", "LSTM")]
@@ -17,7 +18,7 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--horizon", type=int, default=FORECAST_HORIZON_WEEKS, choices=range(1, 5))
     args = parser.parse_args()
-    panel = load_criticality_panel(args.horizon)
+    panel = load_criticality_training_panel(args.horizon)
     test = panel.loc[panel["target_epi_year"].eq(TEST_YEAR)].copy()
     majority = np.zeros(len(test), dtype=int)
     persistence_labels = category_from_incidence(test["incidencia_recente_4s_100k"])

@@ -67,18 +67,21 @@ Frontend, em outro terminal:
 streamlit run app/app.py
 ```
 
-O frontend usa `API_URL`, cujo padrão local é `http://127.0.0.1:8000`.
+Antes de iniciar, configure `DATABASE_URL` para a FastAPI e `API_URL` para o
+Streamlit. A aplicação não usa CSVs nem endereços locais como fallback.
 
-## Preparar o Supabase
+## Schema do Supabase
 
-O bootstrap usa apenas dados processados, sem enviar notificações individuais de dengue:
+As tabelas operacionais já devem conter os dados semanais necessários. Para
+aplicar ou atualizar somente o schema, sem ler arquivos locais:
 
 ```powershell
-python -m scripts.bootstrap_supabase --dry-run
-python -m scripts.bootstrap_supabase
+python -m scripts.apply_supabase_schema
 ```
 
-O segundo comando exige `DATABASE_URL`. No painel do Supabase, use **Connect → Session pooler** (porta `5432`), que é a opção compatível com ambientes IPv4 como o Render e o GitHub Actions. Ele aplica `supabase/migrations/001_operational_schema.sql` e envia:
+O comando exige `DATABASE_URL`. No painel do Supabase, use **Connect → Session
+pooler** (porta `5432`), compatível com ambientes IPv4 como Render e GitHub
+Actions. A aplicação consulta exclusivamente:
 
 - `ef_ibge_populacao_bairro`;
 - `ef_inmet_semanal_recife`;
@@ -100,10 +103,18 @@ python train_xgboost_production.py
 
 Os artefatos necessários à inferência ficam em `models/criticidade_v2/production/`.
 
-Para gerar uma previsão operacional local usando a última semana completa:
+O treinamento lê população, clima e casos semanais diretamente das tabelas
+`ef_*`. Para validar a construção de um horizonte sem treinar:
 
 ```powershell
-python -m scripts.export_local_production_preview
+python prepare_criticality.py --horizon 1
+```
+
+O processamento de arquivos brutos continua disponível apenas como operação
+offline explícita. Todos os caminhos devem ser informados pelo usuário:
+
+```powershell
+python prepare_data.py --dengue dengue.csv --climate inmet.csv --population ibge.csv --horizon 1
 ```
 
 ## Inferência automática
@@ -128,7 +139,6 @@ O workflow `.github/workflows/daily-inference.yml` executa essa rotina diariamen
 | Ambiente | Variável | Finalidade |
 |---|---|---|
 | Render | `DATABASE_URL` | conexão privada da FastAPI com Supabase |
-| Render | `DATA_SOURCE=database` | impede fallback silencioso para CSV |
 | Streamlit | `API_URL` | URL HTTPS pública da FastAPI |
 | GitHub Actions | `DATABASE_URL` | leitura e gravação do pipeline diário |
 | Pipeline | `EVALUATION_LAG_WEEKS=4` | prazo para consolidação |
@@ -143,8 +153,8 @@ O arquivo `render.yaml` define o serviço e o endpoint de saúde `/health`.
 
 Configuração esperada:
 
-- repositório: `rayrafaneli/epidemiological-forecaster`;
-- branch de revisão: `review/application`;
+- repositório: `viniciussntos/epidemiological-forecaster-clone`;
+- branch: `main`;
 - arquivo principal: `app/app.py`;
 - segredo: `API_URL` apontando para o Render.
 
@@ -161,8 +171,8 @@ Os testes verificam preparação de dados, ausência de vazamento temporal, cont
 ```text
 app/                         FastAPI e Streamlit
 models/criticidade_v2/       artefatos de avaliação e produção
-src/                         preparação, modelagem e acesso aos dados
-scripts/                     bootstrap e utilitários locais
+src/                         preparação, modelagem e acesso ao Supabase
+scripts/                     aplicação do schema operacional
 supabase/migrations/         schema PostgreSQL
 .github/workflows/           automação diária
 tests/                       testes automatizados

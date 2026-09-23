@@ -14,7 +14,8 @@ from sklearn.compose import ColumnTransformer
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
 
 from src.config import CRITICALITY_MODELS_DIR, CRITICALITY_RESULTS_DIR, RANDOM_SEED, TEST_YEAR
-from src.criticality_pipeline import CRITICALITY_NUMERIC_FEATURES, load_criticality_panel
+from src.criticality_pipeline import CRITICALITY_NUMERIC_FEATURES
+from src.training_data import build_training_panel, load_operational_base_from_database
 
 
 FEATURES = CRITICALITY_NUMERIC_FEATURES + ["bairro_norm"]
@@ -85,9 +86,10 @@ def main() -> None:
         "gerado_em": generated_at,
         "horizontes": {},
     }
+    base = load_operational_base_from_database()
 
     for horizon in range(1, 5):
-        panel = load_criticality_panel(horizon)
+        panel = build_training_panel(base, horizon)
         training = panel.loc[panel["target_epi_year"].le(args.train_through_year)].copy()
         parameters, trees = load_selected_configuration(horizon)
         selector = make_production_preprocessor()

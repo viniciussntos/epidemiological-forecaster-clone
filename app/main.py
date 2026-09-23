@@ -14,8 +14,8 @@ from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 
-# Carrega a configuração local antes dos módulos que consultam DATA_SOURCE e
-# DATABASE_URL. Em produção, variáveis já definidas pelo ambiente têm prioridade.
+# Carrega a configuração local antes dos módulos que consultam DATABASE_URL.
+# Em produção, variáveis já definidas pelo ambiente têm prioridade.
 load_dotenv(Path(__file__).resolve().parents[1] / ".env")
 
 from src.dashboard_data import (

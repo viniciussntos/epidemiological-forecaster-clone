@@ -13,14 +13,11 @@ import numpy as np
 import pandas as pd
 
 from src.config import (
-    CLIMATE_SOURCE,
     DATA_DIR,
     DATA_START_YEAR,
-    DENGUE_SOURCE,
     FORECAST_HORIZON_WEEKS,
     LOOKBACK_WEEKS,
     POPULATION_CENSUS_YEAR,
-    POPULATION_SOURCE,
     TEST_YEAR,
     TRAIN_END_YEAR,
 )
@@ -80,9 +77,11 @@ NEIGHBORHOOD_ALIASES = {
 
 @dataclass(frozen=True)
 class PipelinePaths:
-    dengue: Path = DENGUE_SOURCE
-    climate: Path = CLIMATE_SOURCE
-    population: Path = POPULATION_SOURCE
+    """Arquivos brutos informados explicitamente para uma preparação offline."""
+
+    dengue: Path
+    climate: Path
+    population: Path
     output_dir: Path = DATA_DIR
 
 
@@ -350,7 +349,7 @@ def _build_weekly_panel(
     return panel
 
 
-def prepare_all(paths: PipelinePaths = PipelinePaths(), horizon: int = FORECAST_HORIZON_WEEKS) -> dict[str, Path]:
+def prepare_all(paths: PipelinePaths, horizon: int = FORECAST_HORIZON_WEEKS) -> dict[str, Path]:
     paths.output_dir.mkdir(parents=True, exist_ok=True)
     population = _load_population(paths.population)
     dengue, removed, neighborhood_audit = _load_clean_dengue(paths.dengue, population)
@@ -401,12 +400,3 @@ def prepare_all(paths: PipelinePaths = PipelinePaths(), horizon: int = FORECAST_
     summary_path.write_text(json.dumps(summary, ensure_ascii=False, indent=2), encoding="utf-8")
     outputs["summary"] = summary_path
     return outputs
-
-
-def load_model_panel(horizon: int = FORECAST_HORIZON_WEEKS, output_dir: Path = DATA_DIR) -> pd.DataFrame:
-    path = output_dir / f"painel_semanal_2015_2021_h{horizon}.csv"
-    if not path.exists():
-        prepare_all(PipelinePaths(output_dir=output_dir), horizon=horizon)
-    panel = pd.read_csv(path)
-    required = TABULAR_NUMERIC_FEATURES + ["bairro_norm", "casos_alvo", "target_epi_year"]
-    return panel.dropna(subset=required).reset_index(drop=True)

@@ -15,11 +15,14 @@
 | Natureza ordinal | Não modelada | Erro entre níveis, kappa quadrático e subestimação grave |
 | Referências | Não incluídas | Sempre Baixo e persistência da categoria atual |
 
-Os arquivos e modelos anteriores não foram sobrescritos. A versão 2 fica em `results/criticidade_v2` e `models/criticidade_v2`.
+O código operacional atual mantém somente a classificação de criticidade v2 em
+`results/criticidade_v2` e `models/criticidade_v2`. A regressão semanal anterior
+permanece recuperável pelo histórico do Git, mas não integra mais esta versão da
+aplicação.
 
 ## Alterações específicas do XGBoost
 
-- `XGBRegressor` foi mantido no experimento numérico anterior.
+- O experimento anterior usava `XGBRegressor`; ele foi retirado do código operacional atual.
 - Foi acrescentado um `XGBClassifier` multiclasse com objetivo `multi:softprob`.
 - A potência do peso inverso das classes é escolhida entre 0,25, 0,50, 0,75 e 1,00 usando somente a validação interna.
 - O treinamento final usa todos os dados de 2015–2020 e o número de árvores selecionado antes do teste.

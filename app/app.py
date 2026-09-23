@@ -24,8 +24,12 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-API_URL = os.getenv("API_URL", "http://127.0.0.1:8000").rstrip("/")
+API_URL = os.getenv("API_URL", "").strip().rstrip("/")
 GEOJSON_PATH = Path(__file__).resolve().parent / "assets" / "limites_bairros_recife_2023.geojson"
+
+if not API_URL:
+    st.error("API_URL não foi configurada. Informe a URL pública da FastAPI no ambiente do Streamlit.")
+    st.stop()
 RISK_ORDER = ["Baixo", "Médio", "Alto", "Crítico"]
 RISK_COLORS = {
     "Baixo": "#20c665",

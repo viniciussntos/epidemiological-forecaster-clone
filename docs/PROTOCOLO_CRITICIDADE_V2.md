@@ -55,4 +55,8 @@ Duas referências simples são incluídas: prever sempre Baixo e repetir a categ
 
 ## Relação com o experimento numérico
 
-Os modelos anteriores de regressão continuam disponíveis e medem MAE, RMSE e R² para casos semanais. A versão 2 é uma tarefa diferente, dedicada à categoria da incidência acumulada em quatro semanas. Por isso, as métricas numéricas antigas não são diretamente atribuídas aos classificadores novos.
+Os modelos anteriores de regressão mediam MAE, RMSE e R² para casos semanais e
+permanecem recuperáveis pelo histórico do Git. Eles não fazem parte do código
+operacional atual. A versão 2 é uma tarefa diferente, dedicada à categoria da
+incidência acumulada em quatro semanas; por isso, as métricas numéricas antigas
+não são diretamente atribuídas aos classificadores novos.

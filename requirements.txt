@@ -9,9 +9,6 @@ python-dotenv
 SQLAlchemy
 psycopg2-binary
 requests
-geopandas
-networkx
 streamlit>=1.53
 plotly>=6.0
 pyarrow==25.0.*
-# pysus

@@ -5,14 +5,16 @@ import json
 import numpy as np
 import pandas as pd
 
-from src.config import CRITICALITY_MODELS_DIR, CRITICALITY_RESULTS_DIR, DATA_DIR, PROJECT_ROOT
+from src.config import CRITICALITY_MODELS_DIR, CRITICALITY_RESULTS_DIR, PROJECT_ROOT
+from src.training_data import build_training_panel, load_operational_base_from_database
 
 
 def main() -> None:
     checks = {}
     probability_columns = ["prob_baixo", "prob_medio", "prob_alto", "prob_critico"]
+    base = load_operational_base_from_database()
     for horizon in range(1, 5):
-        panel = pd.read_csv(DATA_DIR / f"painel_criticidade_4s_h{horizon}.csv")
+        panel = build_training_panel(base, horizon)
         test = panel.loc[panel["target_epi_year"].eq(2021)]
         checks[f"h{horizon}_amostras_teste_4888"] = len(test) == 4888
         checks[f"h{horizon}_quatro_categorias_teste"] = test["categoria_criticidade_alvo"].nunique() == 4

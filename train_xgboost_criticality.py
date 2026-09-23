@@ -14,11 +14,10 @@ from src.config import (
     RANDOM_SEED, TEST_YEAR, TRAIN_END_YEAR, XGB_OPTIMIZATION_CANDIDATES,
 )
 from src.criticality_evaluation import evaluate_criticality, save_criticality_evaluation
-from src.dashboard_data import build_dashboard_export
-from src.criticality_modeling import class_weights, make_criticality_preprocessor
-from src.criticality_pipeline import CRITICALITY_NUMERIC_FEATURES, load_criticality_panel
-from src.modeling import set_seed
+from src.criticality_modeling import class_weights, make_criticality_preprocessor, set_seed
+from src.criticality_pipeline import CRITICALITY_NUMERIC_FEATURES
 from src.temporal_validation import fold_metric_row, pooled_validation_metrics, progressive_masks
+from src.training_data import load_criticality_training_panel
 
 
 FEATURES = CRITICALITY_NUMERIC_FEATURES + ["bairro_norm"]
@@ -61,7 +60,7 @@ def main() -> None:
     parser.add_argument("--horizon", type=int, default=FORECAST_HORIZON_WEEKS, choices=range(1, 5))
     args = parser.parse_args()
     set_seed(RANDOM_SEED)
-    panel = load_criticality_panel(args.horizon)
+    panel = load_criticality_training_panel(args.horizon)
     train_full = panel.loc[panel["target_epi_year"].le(TRAIN_END_YEAR)].copy()
     test = panel.loc[panel["target_epi_year"].eq(TEST_YEAR)].copy()
 
@@ -146,8 +145,6 @@ def main() -> None:
     pd.DataFrame({"feature": final_selector.get_feature_names_out(), "importancia": final_model.feature_importances_}).sort_values("importancia", ascending=False).to_csv(
         CRITICALITY_RESULTS_DIR / f"importancia_features_xgboost_h{args.horizon}.csv", index=False, encoding="utf-8-sig"
     )
-    if all((CRITICALITY_RESULTS_DIR / f"previsoes_xgboost_h{horizon}.csv").exists() for horizon in range(1, 5)):
-        build_dashboard_export()
     print(parts[1].to_string(index=False))
 
 

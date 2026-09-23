@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import math
-from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -11,12 +10,9 @@ import pandas as pd
 from src.config import (
     CRITICALITY_LOOKBACK_WEEKS,
     CRITICALITY_WINDOW_WEEKS,
-    DATA_DIR,
-    FORECAST_HORIZON_WEEKS,
     RISK_LABELS,
     RISK_TO_ID,
 )
-from src.data_pipeline import PipelinePaths, prepare_all
 
 
 CASE_OBSERVATION_COLUMNS = [f"casos_obs{lag}" for lag in range(1, CRITICALITY_LOOKBACK_WEEKS + 1)]
@@ -140,49 +136,3 @@ def build_criticality_panel(panel: pd.DataFrame, horizon: int) -> pd.DataFrame:
     panel["target_week_sin"] = np.sin(2 * math.pi * panel["target_epi_week"] / 53.0)
     panel["target_week_cos"] = np.cos(2 * math.pi * panel["target_epi_week"] / 53.0)
     return panel
-
-
-def prepare_criticality_panel(
-    horizon: int = FORECAST_HORIZON_WEEKS,
-    output_dir: Path = DATA_DIR,
-) -> dict[str, Path]:
-    base_path = output_dir / f"painel_semanal_2015_2021_h{horizon}.csv"
-    if not base_path.exists():
-        prepare_all(PipelinePaths(output_dir=output_dir), horizon=horizon)
-    base = pd.read_csv(base_path)
-    panel = build_criticality_panel(base, horizon)
-    required = CRITICALITY_NUMERIC_FEATURES + [
-        "bairro_norm",
-        "categoria_criticidade_id",
-        "casos_alvo",
-        "target_epi_year",
-    ]
-    modelable = panel.dropna(subset=required).reset_index(drop=True)
-
-    panel_path = output_dir / f"painel_criticidade_4s_h{horizon}.csv"
-    distribution_path = output_dir / f"distribuicao_criticidade_4s_h{horizon}.csv"
-    modelable.to_csv(panel_path, index=False, encoding="utf-8-sig")
-    distribution = (
-        modelable.groupby(["target_epi_year", "categoria_criticidade_alvo"], observed=True)
-        .size()
-        .rename("observacoes")
-        .reset_index()
-    )
-    distribution["categoria_criticidade_alvo"] = pd.Categorical(
-        distribution["categoria_criticidade_alvo"], categories=RISK_LABELS, ordered=True
-    )
-    distribution = distribution.sort_values(["target_epi_year", "categoria_criticidade_alvo"])
-    distribution.to_csv(distribution_path, index=False, encoding="utf-8-sig")
-    return {"panel": panel_path, "distribution": distribution_path}
-
-
-def load_criticality_panel(
-    horizon: int = FORECAST_HORIZON_WEEKS,
-    output_dir: Path = DATA_DIR,
-) -> pd.DataFrame:
-    path = output_dir / f"painel_criticidade_4s_h{horizon}.csv"
-    if not path.exists():
-        prepare_criticality_panel(horizon, output_dir)
-    panel = pd.read_csv(path)
-    required = CRITICALITY_NUMERIC_FEATURES + ["bairro_norm", "categoria_criticidade_id"]
-    return panel.dropna(subset=required).reset_index(drop=True)
