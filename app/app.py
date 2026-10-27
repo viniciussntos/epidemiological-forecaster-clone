@@ -419,13 +419,13 @@ if page == "Dashboard":
             metrics = pd.DataFrame(performance["metricas"])
             metric_long = metrics.melt(
                 id_vars="horizonte_semanas",
-                value_vars=["acuracia_balanceada", "f1_macro", "f2_macro"],
+                value_vars=["acuracia", "f1_macro", "f2_macro"],
                 var_name="Métrica",
                 value_name="Valor",
             )
             metric_long["Horizonte"] = metric_long["horizonte_semanas"].map(lambda value: f"S+{int(value)}")
             metric_long["Métrica"] = metric_long["Métrica"].map(
-                {"acuracia_balanceada": "Acurácia balanceada", "f1_macro": "F1 macro", "f2_macro": "F2 macro"}
+                {"acuracia": "Acurácia", "f1_macro": "F1 macro", "f2_macro": "F2 macro"}
             )
             figure = px.line(metric_long, x="Horizonte", y="Valor", color="Métrica", markers=True)
             figure.update_yaxes(range=[0, 1], tickformat=".0%", title=None)
